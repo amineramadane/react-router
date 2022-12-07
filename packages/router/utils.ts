@@ -41,6 +41,7 @@ export interface RedirectResult {
   status: number;
   location: string;
   revalidate: boolean;
+  external: boolean;
 }
 
 /**
@@ -61,7 +62,9 @@ export type DataResult =
   | RedirectResult
   | ErrorResult;
 
-export type FormMethod = "get" | "post" | "put" | "patch" | "delete";
+export type SubmissionFormMethod = "post" | "put" | "patch" | "delete";
+export type FormMethod = "get" | SubmissionFormMethod;
+
 export type FormEncType =
   | "application/x-www-form-urlencoded"
   | "multipart/form-data";
@@ -72,7 +75,7 @@ export type FormEncType =
  * external consumption
  */
 export interface Submission {
-  formMethod: Exclude<FormMethod, "get">;
+  formMethod: SubmissionFormMethod;
   formAction: string;
   formEncType: FormEncType;
   formData: FormData;
@@ -306,7 +309,7 @@ export function convertRoutesToDataRoutes(
 /**
  * Matches the given routes to a location and returns the match data.
  *
- * @see https://reactrouter.com/docs/en/v6/utils/match-routes
+ * @see https://reactrouter.com/utils/match-routes
  */
 export function matchRoutes<
   RouteObjectType extends AgnosticRouteObject = AgnosticRouteObject
@@ -528,7 +531,7 @@ function matchRouteBranch<
 /**
  * Returns a path with params interpolated.
  *
- * @see https://reactrouter.com/docs/en/v6/utils/generate-path
+ * @see https://reactrouter.com/utils/generate-path
  */
 export function generatePath<Path extends string>(
   path: Path,
@@ -606,7 +609,7 @@ type Mutable<T> = {
  * Performs pattern matching on a URL pathname and returns information about
  * the match.
  *
- * @see https://reactrouter.com/docs/en/v6/utils/match-path
+ * @see https://reactrouter.com/utils/match-path
  */
 export function matchPath<
   ParamKey extends ParamParseKey<Path>,
@@ -805,7 +808,7 @@ export function warning(cond: any, message: string): void {
 /**
  * Returns a resolved path object relative to the given pathname.
  *
- * @see https://reactrouter.com/docs/en/v6/utils/resolve-path
+ * @see https://reactrouter.com/utils/resolve-path
  */
 export function resolvePath(to: To, fromPathname = "/"): Path {
   let {
@@ -1243,11 +1246,24 @@ export class ErrorResponse {
   status: number;
   statusText: string;
   data: any;
+  error?: Error;
+  internal: boolean;
 
-  constructor(status: number, statusText: string | undefined, data: any) {
+  constructor(
+    status: number,
+    statusText: string | undefined,
+    data: any,
+    internal = false
+  ) {
     this.status = status;
     this.statusText = statusText || "";
-    this.data = data;
+    this.internal = internal;
+    if (data instanceof Error) {
+      this.data = data.toString();
+      this.error = data;
+    } else {
+      this.data = data;
+    }
   }
 }
 
